@@ -455,6 +455,7 @@ class Exeos:
                         f"{Fore.RED + Style.BRIGHT} Perform Liveness Failed: {Style.RESET_ALL}"
                         f"{Fore.YELLOW + Style.BRIGHT}Too Early For Next Liveness{Style.RESET_ALL}"
                     )
+                    connected = await self.process_connect_node(email, password, node_id, use_proxy)
 
     async def process_user_nodes(self, email: str, nodes_count: int, use_proxy: bool, connection_choice: int):
         proxy = self.get_next_proxy_for_account(email) if use_proxy else None
