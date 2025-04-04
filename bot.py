@@ -207,7 +207,7 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="safari15_5")
+                response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="chrome110")
                 response.raise_for_status()
                 result = response.json()
                 return result['ip']
@@ -233,7 +233,8 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="safari15_5")
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110")
+                self.log(response.text)
                 response.raise_for_status()
                 result = response.json()
                 return result['data']['token']
@@ -253,7 +254,8 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="safari15_5")
+                response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="chrome110")
+                self.log(response.text)
                 response.raise_for_status()
                 result = response.json()
                 return result['data']
@@ -275,7 +277,7 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="safari15_5")
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110")
                 if response.status_code == 401:
                     await self.process_get_access_token(email, password, use_proxy)
                     headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
@@ -305,7 +307,7 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="safari15_5")
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110")
                 if response.status_code == 401:
                     await self.process_get_access_token(email, password, use_proxy)
                     headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
@@ -335,7 +337,7 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="safari15_5")
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110")
                 if response.status_code == 401:
                     await self.process_get_access_token(email, password, use_proxy)
                     headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
@@ -390,45 +392,47 @@ class Exeos:
         stats = None
         while stats is None:
             stats = await self.ext_stats(email, password, node_id, use_proxy, proxy)
-            if stats and stats.get("status") == "success":
-                ip_address = stats.get("data", {}).get("nodeExtension", {}).get("ip", None)
-                if ip_address is None:
-                    ip_address = await self.process_get_ip_address(email, node_id, use_proxy)
-                self.print_message(email, proxy, Fore.WHITE, 
-                    f"Node ID: {node_id}"
-                    f"{Fore.MAGENTA + Style.BRIGHT} - {Style.RESET_ALL}"
-                    f"{Fore.GREEN + Style.BRIGHT}Perform Stats Success{Style.RESET_ALL}"
-                )
-                return ip_address
-            else:
+            if not stats:
+                proxy = self.get_next_proxy_for_account(f"{email}_{node_id}") if use_proxy else None
+                await asyncio.sleep(5)
                 continue
 
+            self.print_message(email, proxy, Fore.WHITE, 
+                f"Node ID: {node_id}"
+                f"{Fore.MAGENTA + Style.BRIGHT} - {Style.RESET_ALL}"
+                f"{Fore.GREEN + Style.BRIGHT}Perform Stats Success{Style.RESET_ALL}"
+            )
+            return True
+
     async def process_connect_node(self, email: str, password: str, node_id: str, use_proxy: bool):
-        ip_address = await self.process_get_stats(email, password, node_id, use_proxy)
-        if ip_address:
-            proxy = self.get_next_proxy_for_account(f"{email}_{node_id}") if use_proxy else None
-            connect = None
-            while connect is None:
-                connect = await self.ext_connect(email, password, node_id, ip_address, use_proxy, proxy)
-                if connect and connect.get("status") == "success":
-                    uptime_total = connect.get("data", {}).get("uptimeTotal")
-                    self.print_message(email, proxy, Fore.WHITE, 
-                        f"Node ID: {node_id} "
-                        f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
-                        f"{Fore.GREEN + Style.BRIGHT} Node Connected {Style.RESET_ALL}"
-                        f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
-                        f"{Fore.CYAN + Style.BRIGHT} Uptime Total: {Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT}{uptime_total}{Style.RESET_ALL}"
-                    )
-                    return True
-                else:
-                    continue
+        stats = await self.process_get_stats(email, password, node_id, use_proxy)
+        if stats:
+            ip_address = await self.process_get_ip_address(email, node_id, use_proxy)
+            if ip_address:
+                proxy = self.get_next_proxy_for_account(f"{email}_{node_id}") if use_proxy else None
+                
+                connect = None
+                while connect is None:
+                    connect = await self.ext_connect(email, password, node_id, ip_address, use_proxy, proxy)
+                    if connect and connect.get("status") == "success":
+                        uptime_total = connect.get("data", {}).get("uptimeTotal")
+                        self.print_message(email, proxy, Fore.WHITE, 
+                            f"Node ID: {node_id} "
+                            f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
+                            f"{Fore.GREEN + Style.BRIGHT} Node Connected {Style.RESET_ALL}"
+                            f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
+                            f"{Fore.CYAN + Style.BRIGHT} Uptime Total: {Style.RESET_ALL}"
+                            f"{Fore.WHITE + Style.BRIGHT}{uptime_total}{Style.RESET_ALL}"
+                        )
+                        return True
+                    else:
+                        continue
 
     async def process_send_liveness(self, email: str, password: str, node_id: str, use_proxy: bool):
         connected = await self.process_connect_node(email, password, node_id, use_proxy)
         if connected:
             while True:
-                await asyncio.sleep(10 * 60)
+                await asyncio.sleep(1 * 60 * 60)
                 proxy = self.get_next_proxy_for_account(f"{email}_{node_id}") if use_proxy else None
                 liveness = await self.ext_liveness(email, password, node_id, use_proxy, proxy)
                 if liveness and liveness.get("status") == "success":
