@@ -234,7 +234,6 @@ class Exeos:
         for attempt in range(retries):
             try:
                 response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110")
-                self.log(response.text)
                 response.raise_for_status()
                 result = response.json()
                 return result['data']['token']
@@ -255,7 +254,6 @@ class Exeos:
         for attempt in range(retries):
             try:
                 response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="chrome110")
-                self.log(response.text)
                 response.raise_for_status()
                 result = response.json()
                 return result['data']
