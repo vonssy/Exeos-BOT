@@ -374,7 +374,7 @@ class Exeos:
         while ip_address is None:
             ip_address = await self.get_ip_address(email, node_id, proxy)
             if not ip_address:
-                proxy = self.get_next_proxy_for_account(f"{email}_{node_id}") if use_proxy else None
+                proxy = self.rotate_proxy_for_account(f"{email}_{node_id}") if use_proxy else None
                 await asyncio.sleep(5)
                 continue
             
@@ -391,7 +391,7 @@ class Exeos:
         while stats is None:
             stats = await self.ext_stats(email, password, node_id, use_proxy, proxy)
             if not stats:
-                proxy = self.get_next_proxy_for_account(f"{email}_{node_id}") if use_proxy else None
+                proxy = self.rotate_proxy_for_account(f"{email}_{node_id}") if use_proxy else None
                 await asyncio.sleep(5)
                 continue
 
@@ -556,9 +556,6 @@ class Exeos:
                 await asyncio.gather(*tasks)
                 await asyncio.sleep(10)
 
-        except FileNotFoundError:
-            self.log(f"{Fore.RED}File 'accounts.txt' Not Found.{Style.RESET_ALL}")
-            return
         except Exception as e:
             self.log(f"{Fore.RED+Style.BRIGHT}Error: {e}{Style.RESET_ALL}")
             raise e
