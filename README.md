@@ -7,11 +7,12 @@ Exeos BOT
 ## Features
 
   - Auto Get Account Information
-  - Auto Run With [Monosans](https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt) Proxy - Choose 1
-  - Auto Run With Private Proxy - Choose 2
-  - Auto Run Without Proxy - Choose 3
+  - Auto Run With [Monosans](https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt) Proxy - `Choose 1`
+  - Auto Run With Private Proxy - `Choose 2`
+  - Auto Run Without Proxy - `Choose 3`
+  - Auto Rotate Invalid Proxies - `y` or `n`
   - Auto Register or Use Exiting Node Ids
-  - Auto Connect & Perform Liveness
+  - Auto Connect Nodes & Maintain Liveness
   - Multi Accounts With Threads
 
 ## Requiremnets
@@ -55,6 +56,12 @@ Exeos BOT
     protocol://ip:port
     protocol://user:pass@ip:port
   ```
+
+## Setup
+
+```bash
+python setup.py #or python3 setup.py
+```
 
 ## Run
 
