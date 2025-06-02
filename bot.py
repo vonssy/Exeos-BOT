@@ -25,7 +25,6 @@ class Exeos:
         self.account_proxies = {}
         self.access_tokens = {}
         self.ip_address = {}
-        self.node_ids = {}
 
     def clear_terminal(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -176,7 +175,7 @@ class Exeos:
 
         return choose, rotate
         
-    async def check_connection(self, email: str, proxy=None):
+    async def check_connection(self, email: str, node_id: str, proxy=None):
         url = "https://api.ipify.org/?format=json"
         headers = {
             "Content-Type": "application/json"
@@ -186,11 +185,11 @@ class Exeos:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            return self.print_message(email, self.node_ids[email], proxy, Fore.RED, f"Connection Not 200 OK: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+            return self.print_message(email, node_id, proxy, Fore.RED, f"Connection Not 200 OK: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
     
-    async def node_stats(self, email: str, proxy=None, retries=5):
+    async def node_stats(self, email: str, node_id: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/stats"
-        data = json.dumps({"extensionId":self.node_ids[email]})
+        data = json.dumps({"extensionId":node_id})
         headers = {
             **self.headers,
             "Authorization": f"Bearer {self.access_tokens[email]}",
@@ -206,11 +205,11 @@ class Exeos:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                return self.print_message(email, self.node_ids[email], proxy, Fore.RED, f"Update Stats Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                return self.print_message(email, node_id, proxy, Fore.RED, f"Update Stats Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
     
-    async def node_connect(self, email: str, proxy=None, retries=5):
+    async def node_connect(self, email: str, node_id: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/connect"
-        data = json.dumps({"extensionId":self.node_ids[email], "ip":self.ip_address[email]})
+        data = json.dumps({"extensionId":node_id, "ip":self.ip_address[node_id]})
         headers = {
             **self.headers,
             "Authorization": f"Bearer {self.access_tokens[email]}",
@@ -226,11 +225,11 @@ class Exeos:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                return self.print_message(email, self.node_ids[email], proxy, Fore.RED, f"Node Not Connected: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                return self.print_message(email, node_id, proxy, Fore.RED, f"Node Not Connected: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
     
-    async def node_liveness(self, email: str, proxy=None, retries=5):
+    async def node_liveness(self, email: str, node_id: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/liveness"
-        data = json.dumps({"extensionId":self.node_ids[email]})
+        data = json.dumps({"extensionId":node_id})
         headers = {
             **self.headers,
             "Authorization": f"Bearer {self.access_tokens[email]}",
@@ -246,59 +245,59 @@ class Exeos:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                return self.print_message(email, self.node_ids[email], proxy, Fore.RED, f"Maintain Liveness Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                return self.print_message(email, node_id, proxy, Fore.RED, f"Maintain Liveness Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
         
-    async def process_check_connection(self, email: str, use_proxy: bool, rotate_proxy: bool):
-        proxy = self.get_next_proxy_for_account(self.node_ids[email]) if use_proxy else None
+    async def process_check_connection(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
+        proxy = self.get_next_proxy_for_account(node_id) if use_proxy else None
         
         if rotate_proxy:
             while True:
-                is_valid = await self.check_connection(email, proxy)
+                is_valid = await self.check_connection(email, node_id, proxy)
                 if is_valid and "ip" in is_valid:
-                    self.ip_address[email] = is_valid["ip"]
+                    self.ip_address[node_id] = is_valid["ip"]
 
-                    self.print_message(email, self.node_ids[email], proxy, Fore.GREEN, "Connection 200 OK")
+                    self.print_message(email, node_id, proxy, Fore.GREEN, "Connection 200 OK")
                     return True
 
-                proxy = self.rotate_proxy_for_account(self.node_ids[email]) if use_proxy else None
+                proxy = self.rotate_proxy_for_account(node_id) if use_proxy else None
                 await asyncio.sleep(5)
                 continue
                 
         while True:
-            is_valid = await self.check_connection(email, proxy)
+            is_valid = await self.check_connection(email, node_id, proxy)
             if is_valid and "ip" in is_valid:
                 self.ip_address[email] = is_valid["ip"]
 
-                self.print_message(email, self.node_ids[email], proxy, Fore.GREEN, "Connection 200 OK")
+                self.print_message(email, node_id, proxy, Fore.GREEN, "Connection 200 OK")
                 return True
 
             await asyncio.sleep(5)
             continue
         
-    async def process_node_stats(self, email: str, use_proxy: bool, rotate_proxy: bool):
-        is_valid = await self.process_check_connection(email, use_proxy, rotate_proxy)
+    async def process_node_stats(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
+        is_valid = await self.process_check_connection(email, node_id, use_proxy, rotate_proxy)
         if is_valid:
             while True:
-                proxy = self.get_next_proxy_for_account(self.node_ids[email]) if use_proxy else None
+                proxy = self.get_next_proxy_for_account(node_id) if use_proxy else None
 
-                update = await self.node_stats(email, proxy)
+                update = await self.node_stats(email, node_id, proxy)
                 if update:
-                    self.print_message(email, self.node_ids[email], proxy, Fore.GREEN, "Stats Updated Successfully")
+                    self.print_message(email, node_id, proxy, Fore.GREEN, "Stats Updated Successfully")
                     return True
 
                 await asyncio.sleep(5)
                 continue
         
-    async def process_node_connect(self, email: str, use_proxy: bool, rotate_proxy: bool):
-        update = await self.process_node_stats(email, use_proxy, rotate_proxy)
+    async def process_node_connect(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
+        update = await self.process_node_stats(email, node_id, use_proxy, rotate_proxy)
         if update:
             while True:
-                proxy = self.get_next_proxy_for_account(self.node_ids[email]) if use_proxy else None
+                proxy = self.get_next_proxy_for_account(node_id) if use_proxy else None
 
-                connect = await self.node_connect(email, proxy)
+                connect = await self.node_connect(email, node_id, proxy)
                 if connect and connect.get("status") == "success":
                     uptime_total = connect.get("data", {}).get("uptimeTotal")
-                    self.print_message(email, self.node_ids[email], proxy, Fore.GREEN, "Node Is Connected "
+                    self.print_message(email, node_id, proxy, Fore.GREEN, "Node Is Connected "
                         f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
                         f"{Fore.CYAN + Style.BRIGHT} Uptime Total: {Style.RESET_ALL}"
                         f"{Fore.WHITE + Style.BRIGHT}{uptime_total}{Style.RESET_ALL}"
@@ -317,17 +316,17 @@ class Exeos:
                 await asyncio.sleep(5)
                 continue
         
-    async def process_node_liveness(self, email: str, use_proxy: bool, rotate_proxy: bool):
+    async def process_node_liveness(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
         while True:
-            proxy = self.get_next_proxy_for_account(self.node_ids[email]) if use_proxy else None
+            proxy = self.get_next_proxy_for_account(node_id) if use_proxy else None
 
-            liveness = await self.node_liveness(email, proxy)
+            liveness = await self.node_liveness(email, node_id, proxy)
             if liveness and liveness.get("status") == "success":
                 earn_today = liveness.get("updatedData", {}).get("nodeExtension", {}).get("todayRewards", 0)
                 earn_total = liveness.get("updatedData", {}).get("nodeExtension", {}).get("totalRewards", 0)
                 uptime_total = liveness.get("updatedData", {}).get("nodeExtension", {}).get("uptimeTotal", 0)
 
-                self.print_message(email, self.node_ids[email], proxy, Fore.GREEN, "Maintain Liveness Success"
+                self.print_message(email, node_id, proxy, Fore.GREEN, "Maintain Liveness Success"
                     f"{Fore.MAGENTA + Style.BRIGHT} - {Style.RESET_ALL}"
                     f"{Fore.CYAN + Style.BRIGHT}Earning:{Style.RESET_ALL}"
                     f"{Fore.WHITE + Style.BRIGHT} Today {earn_today} PTS{Style.RESET_ALL}"
@@ -339,7 +338,7 @@ class Exeos:
                 )
 
             elif liveness and liveness.get("status") == "fail":
-                await self.process_node_connect(email, use_proxy, rotate_proxy)
+                await self.process_node_connect(email, node_id, use_proxy, rotate_proxy)
                 continue
 
             else:
@@ -356,16 +355,14 @@ class Exeos:
             await asyncio.sleep(1 * 60 * 60)
         
     async def process_accounts(self, email: str, nodes: list, use_proxy: bool, rotate_proxy: bool):
-        async def process_node_session(node):
-            node_id = node.get("nodeId")
-            if node_id:
-                self.node_ids[email] = node_id
+        async def process_node_session(node_id):
+            connected = await self.process_node_connect(email, node_id, use_proxy, rotate_proxy)
+            if connected:
+                asyncio.create_task(self.process_node_liveness(email, node_id, use_proxy, rotate_proxy))
 
-                connected = await self.process_node_connect(email, use_proxy, rotate_proxy)
-                if connected:
-                    asyncio.create_task(self.process_node_liveness(email, use_proxy, rotate_proxy))
-
-        await asyncio.gather(*[process_node_session(node) for node in nodes if node])
+        await asyncio.gather(*[
+            process_node_session(node["nodeId"]) for node in nodes if "nodeId" in node and node["nodeId"]
+        ])
 
     async def main(self):
         try:
