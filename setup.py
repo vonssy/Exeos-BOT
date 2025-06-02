@@ -70,12 +70,10 @@ class Exeos:
     def save_nodes(self, new_nodes):
         filename = "nodes.json"
         try:
-            # 1. Buat file jika belum ada
             if not os.path.exists(filename):
                 with open(filename, 'w') as file:
                     json.dump([], file, indent=4)
 
-            # 2. Baca isi file jika ada isinya
             if os.path.getsize(filename) == 0:
                 existing_nodes = []
             else:
@@ -87,30 +85,25 @@ class Exeos:
                 token = new_node["Token"]
                 new_node_list = new_node.get("Nodes", [])
 
-                # Cek apakah email sudah ada di existing_nodes
                 found = False
                 for existing_node in existing_nodes:
                     if existing_node["Email"] == email:
                         found = True
-                        # 3a. Timpa token
+
                         existing_node["Token"] = token
 
-                        # 3b. Jika Nodes lama kosong/null, timpa semua dengan yang baru
                         if not existing_node.get("Nodes"):
                             existing_node["Nodes"] = new_node_list
                         else:
-                            # 3c. Tambahkan nodeId yang belum ada
-                            existing_node_ids = {n["nodeId"] for n in existing_node["Nodes"]}
-                            for n in new_node_list:
-                                if n["nodeId"] not in existing_node_ids:
-                                    existing_node["Nodes"].append(n)
+                            existing_node_ids = {node["nodeId"] for node in existing_node["Nodes"]}
+                            for node in new_node_list:
+                                if node["nodeId"] not in existing_node_ids:
+                                    existing_node["Nodes"].append(node)
                         break
 
-                # 2. Jika email belum ada, tambahkan ke existing_nodes
                 if not found:
                     existing_nodes.append(new_node)
 
-            # Tulis hasil akhirnya ke file
             with open(filename, 'w') as file:
                 json.dump(existing_nodes, file, indent=4)
 
