@@ -66,22 +66,22 @@ class Exeos:
         except json.JSONDecodeError:
             return []
     
-    async def load_proxies(self, proxy_choice: int):
+    async def load_proxies(self, use_proxy_choice: int):
         filename = "proxy.txt"
         try:
-            if proxy_choice == 1:
-                response = await asyncio.to_thread(requests.get, "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt")
+            if use_proxy_choice == 1:
+                response = await asyncio.to_thread(requests.get, "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text")
                 response.raise_for_status()
                 content = response.text
                 with open(filename, 'w') as f:
                     f.write(content)
-                self.proxies = content.splitlines()
+                self.proxies = [line.strip() for line in content.splitlines() if line.strip()]
             else:
                 if not os.path.exists(filename):
                     self.log(f"{Fore.RED + Style.BRIGHT}File {filename} Not Found.{Style.RESET_ALL}")
                     return
                 with open(filename, 'r') as f:
-                    self.proxies = f.read().splitlines()
+                    self.proxies = [line.strip() for line in f.read().splitlines() if line.strip()]
             
             if not self.proxies:
                 self.log(f"{Fore.RED + Style.BRIGHT}No Proxies Found.{Style.RESET_ALL}")
@@ -144,18 +144,18 @@ class Exeos:
     def print_question(self):
         while True:
             try:
-                print(f"{Fore.WHITE + Style.BRIGHT}1. Run With Monosans Proxy{Style.RESET_ALL}")
+                print(f"{Fore.WHITE + Style.BRIGHT}1. Run With Free Proxyscrape Proxy{Style.RESET_ALL}")
                 print(f"{Fore.WHITE + Style.BRIGHT}2. Run With Private Proxy{Style.RESET_ALL}")
                 print(f"{Fore.WHITE + Style.BRIGHT}3. Run Without Proxy{Style.RESET_ALL}")
                 choose = int(input(f"{Fore.BLUE + Style.BRIGHT}Choose [1/2/3] -> {Style.RESET_ALL}").strip())
 
                 if choose in [1, 2, 3]:
                     proxy_type = (
-                        "Run With Monosans Proxy" if choose == 1 else 
-                        "Run With Private Proxy" if choose == 2 else 
-                        "Run Without Proxy"
+                        "With Free Proxyscrape" if choose == 1 else 
+                        "With Private" if choose == 2 else 
+                        "Without"
                     )
-                    print(f"{Fore.GREEN + Style.BRIGHT}{proxy_type} Selected.{Style.RESET_ALL}")
+                    print(f"{Fore.GREEN + Style.BRIGHT}Run {proxy_type} Proxy Selected.{Style.RESET_ALL}")
                     break
                 else:
                     print(f"{Fore.RED + Style.BRIGHT}Please enter either 1, 2 or 3.{Style.RESET_ALL}")
@@ -181,7 +181,7 @@ class Exeos:
             "Content-Type": "application/json"
         }
         try:
-            response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="chrome110")
+            response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -198,7 +198,7 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110")
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
@@ -218,7 +218,7 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110")
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
@@ -238,7 +238,7 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110")
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
@@ -248,28 +248,16 @@ class Exeos:
                 return self.print_message(email, node_id, proxy, Fore.RED, f"Maintain Liveness Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
         
     async def process_check_connection(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
-        proxy = self.get_next_proxy_for_account(node_id) if use_proxy else None
-        
-        if rotate_proxy:
-            while True:
-                is_valid = await self.check_connection(email, node_id, proxy)
-                if is_valid and "ip" in is_valid:
-                    self.ip_address[node_id] = is_valid["ip"]
-
-                    self.print_message(email, node_id, proxy, Fore.GREEN, "Connection 200 OK")
-                    return True
-
-                proxy = self.rotate_proxy_for_account(node_id) if use_proxy else None
-                await asyncio.sleep(5)
-                continue
-                
         while True:
-            is_valid = await self.check_connection(email, node_id, proxy)
-            if is_valid and "ip" in is_valid:
-                self.ip_address[email] = is_valid["ip"]
+            proxy = self.get_next_proxy_for_account(node_id) if use_proxy else None
 
-                self.print_message(email, node_id, proxy, Fore.GREEN, "Connection 200 OK")
+            is_valid = await self.check_connection(email, node_id, proxy)
+            if is_valid:
+                self.ip_address[node_id] = is_valid["ip"]
                 return True
+            
+            if rotate_proxy:
+                proxy = self.rotate_proxy_for_account(node_id)
 
             await asyncio.sleep(5)
             continue
@@ -297,6 +285,7 @@ class Exeos:
                 connect = await self.node_connect(email, node_id, proxy)
                 if connect and connect.get("status") == "success":
                     uptime_total = connect.get("data", {}).get("uptimeTotal")
+
                     self.print_message(email, node_id, proxy, Fore.GREEN, "Node Is Connected "
                         f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
                         f"{Fore.CYAN + Style.BRIGHT} Uptime Total: {Style.RESET_ALL}"
@@ -391,13 +380,21 @@ class Exeos:
             self.log(f"{Fore.CYAN + Style.BRIGHT}={Style.RESET_ALL}"*75)
 
             tasks = []
-            for account in accounts:
+            for idx, account in enumerate(accounts, start=1):
                 if account:
                     email = account["Email"]
                     token = account["Token"]
                     nodes = account["Nodes"]
 
                     if not "@" in email or not token:
+                        self.log(
+                            f"{Fore.CYAN + Style.BRIGHT}[ Account: {Style.RESET_ALL}"
+                            f"{Fore.WHITE + Style.BRIGHT}{self.mask_account(email)}{Style.RESET_ALL}"
+                            f"{Fore.MAGENTA + Style.BRIGHT} - {Style.RESET_ALL}"
+                            f"{Fore.CYAN + Style.BRIGHT}Status:{Style.RESET_ALL}"
+                            f"{Fore.RED + Style.BRIGHT} Invalid Nodes Data {Style.RESET_ALL}"
+                            f"{Fore.CYAN + Style.BRIGHT}]{Style.RESET_ALL}"
+                        )
                         continue
 
                     if not nodes or isinstance(nodes, list) and len(nodes) == 0:

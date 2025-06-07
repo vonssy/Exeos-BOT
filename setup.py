@@ -111,22 +111,22 @@ class Exeos:
             self.log(f"Save Nodes Failed: {str(e)}")
             return []
     
-    async def load_proxies(self, proxy_choice: int):
+    async def load_proxies(self, use_proxy_choice: int):
         filename = "proxy.txt"
         try:
-            if proxy_choice == 1:
-                response = await asyncio.to_thread(requests.get, "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt")
+            if use_proxy_choice == 1:
+                response = await asyncio.to_thread(requests.get, "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text")
                 response.raise_for_status()
                 content = response.text
                 with open(filename, 'w') as f:
                     f.write(content)
-                self.proxies = content.splitlines()
+                self.proxies = [line.strip() for line in content.splitlines() if line.strip()]
             else:
                 if not os.path.exists(filename):
                     self.log(f"{Fore.RED + Style.BRIGHT}File {filename} Not Found.{Style.RESET_ALL}")
                     return
                 with open(filename, 'r') as f:
-                    self.proxies = f.read().splitlines()
+                    self.proxies = [line.strip() for line in f.read().splitlines() if line.strip()]
             
             if not self.proxies:
                 self.log(f"{Fore.RED + Style.BRIGHT}No Proxies Found.{Style.RESET_ALL}")
@@ -175,17 +175,14 @@ class Exeos:
             return f"{mask_account}@{domain}"
 
     def print_question(self):
-        count = 0
-        rotate = False
-
         while True:
             try:
                 print(f"{Fore.WHITE + Style.BRIGHT}1. Create New Nodes{Style.RESET_ALL}")
-                print(f"{Fore.WHITE + Style.BRIGHT}2. Use Exiting Nodes{Style.RESET_ALL}")
+                print(f"{Fore.WHITE + Style.BRIGHT}2. Retrieve Exiting Nodes{Style.RESET_ALL}")
                 option = int(input(f"{Fore.BLUE + Style.BRIGHT}Choose [1/2] -> {Style.RESET_ALL}").strip())
 
                 if option in [1, 2]:
-                    option_type = "Create New" if option == 1 else "Use Exiting"
+                    option_type = "Create New" if option == 1 else "Retrieve Exiting"
                     print(f"{Fore.GREEN + Style.BRIGHT}{option_type} Nodes Selected.{Style.RESET_ALL}")
                     break
                 else:
@@ -193,6 +190,7 @@ class Exeos:
             except ValueError:
                 print(f"{Fore.RED+Style.BRIGHT}Invalid input. Enter a number (1 or 2).{Style.RESET_ALL}")
 
+        count = 0
         if option == 1:
             while True:
                 try:
@@ -206,24 +204,25 @@ class Exeos:
 
         while True:
             try:
-                print(f"{Fore.WHITE + Style.BRIGHT}1. Run With Monosans Proxy{Style.RESET_ALL}")
+                print(f"{Fore.WHITE + Style.BRIGHT}1. Run With Free Proxyscrape Proxy{Style.RESET_ALL}")
                 print(f"{Fore.WHITE + Style.BRIGHT}2. Run With Private Proxy{Style.RESET_ALL}")
                 print(f"{Fore.WHITE + Style.BRIGHT}3. Run Without Proxy{Style.RESET_ALL}")
                 choose = int(input(f"{Fore.BLUE + Style.BRIGHT}Choose [1/2/3] -> {Style.RESET_ALL}").strip())
 
                 if choose in [1, 2, 3]:
                     proxy_type = (
-                        "Run With Monosans Proxy" if choose == 1 else 
-                        "Run With Private Proxy" if choose == 2 else 
-                        "Run Without Proxy"
+                        "With Free Proxyscrape" if choose == 1 else 
+                        "With Private" if choose == 2 else 
+                        "Without"
                     )
-                    print(f"{Fore.GREEN + Style.BRIGHT}{proxy_type} Selected.{Style.RESET_ALL}")
+                    print(f"{Fore.GREEN + Style.BRIGHT}Run {proxy_type} Proxy Selected.{Style.RESET_ALL}")
                     break
                 else:
                     print(f"{Fore.RED + Style.BRIGHT}Please enter either 1, 2 or 3.{Style.RESET_ALL}")
             except ValueError:
                 print(f"{Fore.RED + Style.BRIGHT}Invalid input. Enter a number (1, 2 or 3).{Style.RESET_ALL}")
 
+        rotate = False
         if choose in [1, 2]:
             while True:
                 rotate = input(f"{Fore.BLUE + Style.BRIGHT}Rotate Invalid Proxy? [y/n] -> {Style.RESET_ALL}").strip()
@@ -246,14 +245,19 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110")
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                return None
+                return self.log(
+                    f"{Fore.CYAN+Style.BRIGHT}Status :{Style.RESET_ALL}"
+                    f"{Fore.RED+Style.BRIGHT} Login Failed {Style.RESET_ALL}"
+                    f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
+                    f"{Fore.YELLOW+Style.BRIGHT} {str(e)} {Style.RESET_ALL}"
+                )
             
     async def user_data(self, email: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/account/web/me"
@@ -263,74 +267,44 @@ class Exeos:
         }
         for attempt in range(retries):
             try:
-                response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="chrome110")
+                response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                return None
+                return self.log(
+                    f"{Fore.CYAN+Style.BRIGHT}Error  :{Style.RESET_ALL}"
+                    f"{Fore.RED+Style.BRIGHT} GET Exiting Node Ids Failed {Style.RESET_ALL}"
+                    f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
+                    f"{Fore.YELLOW+Style.BRIGHT} {str(e)} {Style.RESET_ALL}"
+                )
             
     async def process_user_login(self, email: str, password: str, use_proxy: bool, rotate_proxy: bool):
-        proxy = self.get_next_proxy_for_account(email) if use_proxy else None
-
-        if rotate_proxy:
-            while True:
-                login = await self.email_login(email, password, proxy)
-                if login and login.get("status") == "success":
-                    self.access_tokens[email] = login["data"]["token"]
-
-                    self.log(
-                        f"{Fore.CYAN + Style.BRIGHT}Proxy  :{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} {proxy} {Style.RESET_ALL}"
-                    )
-                    self.log(
-                        f"{Fore.CYAN + Style.BRIGHT}Status :{Style.RESET_ALL}"
-                        f"{Fore.GREEN + Style.BRIGHT} Login Success {Style.RESET_ALL}"
-                    )
-                    return True
-                
-                self.log(
-                    f"{Fore.CYAN + Style.BRIGHT}Proxy  :{Style.RESET_ALL}"
-                    f"{Fore.WHITE + Style.BRIGHT} {proxy} {Style.RESET_ALL}"
-                )
-                self.log(
-                    f"{Fore.CYAN + Style.BRIGHT}Status :{Style.RESET_ALL}"
-                    f"{Fore.RED + Style.BRIGHT} Login Failed {Style.RESET_ALL}"
-                    f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
-                    f"{Fore.YELLOW + Style.BRIGHT} Rotating Proxy {Style.RESET_ALL}"
-                )
-
-                proxy = self.rotate_proxy_for_account(email) if use_proxy else None
-                await asyncio.sleep(5)
-                continue
-                
-        login = await self.email_login(email, password, proxy)
-        if login and login.get("status") == "success":
-            self.access_tokens[email] = login["data"]["token"]
-
+        while True:
+            proxy = self.get_next_proxy_for_account(email) if use_proxy else None
             self.log(
                 f"{Fore.CYAN + Style.BRIGHT}Proxy  :{Style.RESET_ALL}"
                 f"{Fore.WHITE + Style.BRIGHT} {proxy} {Style.RESET_ALL}"
             )
-            self.log(
-                f"{Fore.CYAN + Style.BRIGHT}Status :{Style.RESET_ALL}"
-                f"{Fore.GREEN + Style.BRIGHT} Login Success {Style.RESET_ALL}"
-            )
-            return True
-        
-        self.log(
-            f"{Fore.CYAN + Style.BRIGHT}Proxy  :{Style.RESET_ALL}"
-            f"{Fore.WHITE + Style.BRIGHT} {proxy} {Style.RESET_ALL}"
-        )
-        self.log(
-            f"{Fore.CYAN + Style.BRIGHT}Status :{Style.RESET_ALL}"
-            f"{Fore.RED + Style.BRIGHT} Login Failed {Style.RESET_ALL}"
-            f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
-            f"{Fore.YELLOW + Style.BRIGHT} Skipping This Account {Style.RESET_ALL}"
-        )
-        return False
+
+            login = await self.email_login(email, password, proxy)
+            if login and login.get("status") == "success":
+                self.access_tokens[email] = login["data"]["token"]
+
+                self.log(
+                    f"{Fore.CYAN + Style.BRIGHT}Status :{Style.RESET_ALL}"
+                    f"{Fore.GREEN + Style.BRIGHT} Login Success {Style.RESET_ALL}"
+                )
+                return True
+            
+            if rotate_proxy:
+                proxy = self.rotate_proxy_for_account(email)
+                await asyncio.sleep(5)
+                continue
+
+            return False
             
     async def process_get_exiting_nodes(self, email: str, use_proxy: bool):
         proxy = self.get_next_proxy_for_account(email) if use_proxy else None
@@ -357,10 +331,6 @@ class Exeos:
             )
             return self.node_datas
 
-        self.log(
-            f"{Fore.CYAN + Style.BRIGHT}Nodes  :{Style.RESET_ALL}"
-            f"{Fore.RED + Style.BRIGHT} GET Exiting Node Ids Failed {Style.RESET_ALL}"
-        )
         return self.node_datas
                 
     async def process_create_new_nodes(self, nodes_count: int):
@@ -376,11 +346,6 @@ class Exeos:
         return self.node_datas
 
     async def process_accounts(self, email, password, option, nodes_count, use_proxy, rotate_proxy):
-        self.log(
-            f"{Fore.CYAN + Style.BRIGHT}Account:{Style.RESET_ALL}"
-            f"{Fore.WHITE + Style.BRIGHT} {self.mask_account(email)} {Style.RESET_ALL}"
-        )
-
         logined = await self.process_user_login(email, password, use_proxy, rotate_proxy)
         if logined:
 
@@ -394,7 +359,7 @@ class Exeos:
                 self.user_nodes.append({"Email":email, "Token":self.access_tokens[email], "Nodes":node_datas})
                 self.save_nodes(self.user_nodes)
 
-            self.log(f"{Fore.GREEN + Style.BRIGHT}Your Node Datas Have Been Saved Successfully{Style.RESET_ALL}")
+            self.log(f"{Fore.GREEN + Style.BRIGHT}Nodes Data Have Been Saved Successfully{Style.RESET_ALL}")
 
     async def main(self):
         try:
@@ -425,21 +390,24 @@ class Exeos:
                 if account:
                     email = account["Email"]
                     password = account["Password"]
-
-                    if not "@" in email or not password:
-                        self.log(
-                            f"{Fore.CYAN + Style.BRIGHT}Status :{Style.RESET_ALL}"
-                            f"{Fore.RED + Style.BRIGHT} Invalid Account, {Style.RESET_ALL}"
-                            f"{Fore.YELLOW + Style.BRIGHT}Skipped.{Style.RESET_ALL}"
-                        )
-                        continue
-
                     self.log(
                         f"{Fore.CYAN + Style.BRIGHT}{separator}[{Style.RESET_ALL}"
                         f"{Fore.WHITE + Style.BRIGHT} {idx} {Style.RESET_ALL}"
                         f"{Fore.CYAN + Style.BRIGHT}Of{Style.RESET_ALL}"
                         f"{Fore.WHITE + Style.BRIGHT} {len(accounts)} {Style.RESET_ALL}"
                         f"{Fore.CYAN + Style.BRIGHT}]{separator}{Style.RESET_ALL}"
+                    )
+
+                    if not "@" in email or not password:
+                        self.log(
+                            f"{Fore.CYAN+Style.BRIGHT}Status :{Style.RESET_ALL}"
+                            f"{Fore.RED+Style.BRIGHT} Invalid Account Data {Style.RESET_ALL}"
+                        )
+                        continue
+
+                    self.log(
+                        f"{Fore.CYAN + Style.BRIGHT}Account:{Style.RESET_ALL}"
+                        f"{Fore.WHITE + Style.BRIGHT} {self.mask_account(email)} {Style.RESET_ALL}"
                     )
 
                     await self.process_accounts(email, password, option, nodes_count, use_proxy, rotate_proxy)

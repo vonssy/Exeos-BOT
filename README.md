@@ -2,12 +2,12 @@
 Exeos BOT
 
 - Register Here : [Exeos](https://app.exeos.network?referralCode=REFZ26PQGAF)
-- Use Code: REFZ26PQGAF
+- Use Code `REFZ26PQGAF`
 
 ## Features
 
   - Auto Get Account Information
-  - Auto Run With [Monosans](https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt) Proxy - `Choose 1`
+  - Auto Run With [Free Proxyscrape](https://proxyscrape.com/free-proxy-list) Proxy - `Choose 1`
   - Auto Run With Private Proxy - `Choose 2`
   - Auto Run Without Proxy - `Choose 3`
   - Auto Rotate Invalid Proxies - `y` or `n`
@@ -37,7 +37,7 @@ Exeos BOT
 ## Configuration
 
 - **accounts.json:** You will find the file `accounts.json` inside the project directory. Make sure `accounts.json` contains data that matches the format expected by the script. Here are examples of file formats:
-  ```bash
+  ```json
     [
         {
             "Email": "your_email_address_1",
