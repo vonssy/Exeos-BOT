@@ -185,7 +185,9 @@ class Exeos:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            return self.print_message(email, node_id, proxy, Fore.RED, f"Connection Not 200 OK: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+            self.print_message(email, node_id, proxy, Fore.RED, f"Connection Not 200 OK: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                
+        return None
     
     async def node_stats(self, email: str, node_id: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/stats"
@@ -205,7 +207,9 @@ class Exeos:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                return self.print_message(email, node_id, proxy, Fore.RED, f"Update Stats Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                self.print_message(email, node_id, proxy, Fore.RED, f"Update Stats Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                
+        return None
     
     async def node_connect(self, email: str, node_id: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/connect"
@@ -225,7 +229,9 @@ class Exeos:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                return self.print_message(email, node_id, proxy, Fore.RED, f"Node Not Connected: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                self.print_message(email, node_id, proxy, Fore.RED, f"Node Not Connected: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                
+        return None
     
     async def node_liveness(self, email: str, node_id: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/liveness"
@@ -245,7 +251,9 @@ class Exeos:
                 if attempt < retries - 1:
                     await asyncio.sleep(5)
                     continue
-                return self.print_message(email, node_id, proxy, Fore.RED, f"Maintain Liveness Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+                self.print_message(email, node_id, proxy, Fore.RED, f"Maintain Liveness Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
+
+        return None
         
     async def process_check_connection(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
         while True:
@@ -349,9 +357,10 @@ class Exeos:
             if connected:
                 asyncio.create_task(self.process_node_liveness(email, node_id, use_proxy, rotate_proxy))
 
-        await asyncio.gather(*[
+        tasks = [
             process_node_session(node["nodeId"]) for node in nodes if "nodeId" in node and node["nodeId"]
-        ])
+        ]
+        await asyncio.gather(*tasks)
 
     async def main(self):
         try:
