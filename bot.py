@@ -281,6 +281,7 @@ class Exeos:
                     self.print_message(email, node_id, proxy, Fore.GREEN, "Stats Updated Successfully")
                     return True
 
+                await self.process_check_connection(email, node_id, use_proxy, rotate_proxy)
                 await asyncio.sleep(5)
                 continue
         
@@ -299,22 +300,23 @@ class Exeos:
                         f"{Fore.CYAN + Style.BRIGHT} Uptime Total: {Style.RESET_ALL}"
                         f"{Fore.WHITE + Style.BRIGHT}{uptime_total}{Style.RESET_ALL}"
                     )
-
-                    print(
-                        f"{Fore.CYAN + Style.BRIGHT}[ {datetime.now().astimezone(wib).strftime('%x %X %Z')} ]{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-                        f"{Fore.BLUE + Style.BRIGHT}Wait For a Hours For Miantaining Liveness...{Style.RESET_ALL}",
-                        end="\r",
-                        flush=True
-                    )
-                    await asyncio.sleep(1 * 60 * 60)
                     return True
 
+                await self.process_node_stats(email, node_id, use_proxy, rotate_proxy)
                 await asyncio.sleep(5)
                 continue
         
     async def process_node_liveness(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
         while True:
+            print(
+                f"{Fore.CYAN + Style.BRIGHT}[ {datetime.now().astimezone(wib).strftime('%x %X %Z')} ]{Style.RESET_ALL}"
+                f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+                f"{Fore.BLUE + Style.BRIGHT}Wait For a Hours For Miantaining Liveness...{Style.RESET_ALL}",
+                end="\r",
+                flush=True
+            )
+            await asyncio.sleep(1 * 60 * 60)
+
             proxy = self.get_next_proxy_for_account(node_id) if use_proxy else None
 
             liveness = await self.node_liveness(email, node_id, proxy)
@@ -341,15 +343,6 @@ class Exeos:
             else:
                 await asyncio.sleep(5)
                 continue
-
-            print(
-                f"{Fore.CYAN + Style.BRIGHT}[ {datetime.now().astimezone(wib).strftime('%x %X %Z')} ]{Style.RESET_ALL}"
-                f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-                f"{Fore.BLUE + Style.BRIGHT}Wait For a Hours For Miantaining Liveness...{Style.RESET_ALL}",
-                end="\r",
-                flush=True
-            )
-            await asyncio.sleep(1 * 60 * 60)
         
     async def process_accounts(self, email: str, nodes: list, use_proxy: bool, rotate_proxy: bool):
         async def process_node_session(node_id):
@@ -357,10 +350,7 @@ class Exeos:
             if connected:
                 asyncio.create_task(self.process_node_liveness(email, node_id, use_proxy, rotate_proxy))
 
-        tasks = [
-            process_node_session(node["nodeId"]) for node in nodes if "nodeId" in node and node["nodeId"]
-        ]
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*[process_node_session(node["nodeId"]) for node in nodes])
 
     async def main(self):
         try:
