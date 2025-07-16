@@ -1,31 +1,57 @@
 from curl_cffi import requests
-from fake_useragent import FakeUserAgent
 from datetime import datetime
 from colorama import *
-import asyncio, json, uuid, os, pytz
+import asyncio, random, json, uuid, os, pytz
 
 wib = pytz.timezone('Asia/Jakarta')
 
+USER_AGENT = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.127 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.138 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.5563.65 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.5481.178 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.133 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.93 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:114.0) Gecko/20100101 Firefox/114.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:113.0) Gecko/20100101 Firefox/113.0",
+    "Mozilla/5.0 (Windows NT 10.0; rv:102.0) Gecko/20100101 Firefox/102.0",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:115.0) Gecko/20100101 Firefox/115.0",
+    "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:113.0) Gecko/20100101 Firefox/113.0",
+    "Mozilla/5.0 (X11; Arch Linux; Linux x86_64; rv:112.0) Gecko/20100101 Firefox/112.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.127 Safari/537.36 Edg/113.0.1774.35",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.121 Safari/537.36 Edg/112.0.1722.64",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.5563.64 Safari/537.36 Edg/111.0.1661.54",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.137 Safari/537.36 Edg/112.0.1722.68",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5.1 Safari/605.1.15",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Safari/605.1.15",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_7_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36 OPR/99.0.4788.77",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.127 Safari/537.36 OPR/98.0.4759.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36 Brave/1.52.129",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.126 Safari/537.36 Brave/1.51.110",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.127 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36 Vivaldi/6.1.3035.100",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.126 Safari/537.36 Vivaldi/6.0.2979.22",
+    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chromium/114.0.5735.91 Safari/537.36"
+]
+
 class Exeos:
     def __init__(self) -> None:
-        self.headers = {
-            "Accept": "*/*",
-            "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Origin": "https://app.exeos.network",
-            "Referer": "https://app.exeos.network/",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-site",
-            "User-Agent": FakeUserAgent().random
-        }
         self.BASE_API = "https://api.exeos.network"
-        self.ref_code = "REFZ26PQGAF" # U can change it with yours
+        self.REF_CODE = "REFZ26PQGAF" # U can change it with yours
+        self.HEADERS = {}
         self.proxies = []
         self.proxy_index = 0
         self.account_proxies = {}
         self.access_tokens = {}
         self.user_nodes = []
         self.node_datas = []
+        self.nodes_count = 0
 
     def clear_terminal(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -40,7 +66,7 @@ class Exeos:
     def welcome(self):
         print(
             f"""
-        {Fore.GREEN + Style.BRIGHT}Auto Setup {Fore.BLUE + Style.BRIGHT}Exeos - BOT
+        {Fore.GREEN + Style.BRIGHT}Exeos {Fore.BLUE + Style.BRIGHT}Auto BOT
             """
             f"""
         {Fore.GREEN + Style.BRIGHT}Rey? {Fore.YELLOW + Style.BRIGHT}<INI WATERMARK>
@@ -107,15 +133,19 @@ class Exeos:
             with open(filename, 'w') as file:
                 json.dump(existing_nodes, file, indent=4)
 
+            self.log(f"{Fore.GREEN + Style.BRIGHT}Nodes Data Have Been Saved Successfully{Style.RESET_ALL}")
         except Exception as e:
-            self.log(f"Save Nodes Failed: {str(e)}")
+            self.log(
+                f"{Fore.RED+Style.BRIGHT}Save Nodes Failed:{Style.RESET_ALL}"
+                f"{Fore.YELLOW+Style.BRIGHT} {str(e)} {Style.RESET_ALL}"
+            )
             return []
     
     async def load_proxies(self, use_proxy_choice: int):
         filename = "proxy.txt"
         try:
             if use_proxy_choice == 1:
-                response = await asyncio.to_thread(requests.get, "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text")
+                response = await asyncio.to_thread(requests.get, "https://raw.githubusercontent.com/monosans/proxy-list/refs/heads/main/proxies/all.txt")
                 response.raise_for_status()
                 content = response.text
                 with open(filename, 'w') as f:
@@ -190,12 +220,12 @@ class Exeos:
             except ValueError:
                 print(f"{Fore.RED+Style.BRIGHT}Invalid input. Enter a number (1 or 2).{Style.RESET_ALL}")
 
-        count = 0
         if option == 1:
             while True:
                 try:
                     count = int(input(f"{Fore.YELLOW + Style.BRIGHT}How Many Nodes Do You Want to Create For Each Account? -> {Style.RESET_ALL}").strip())
                     if count > 0:
+                        self.nodes_count = count
                         break
                     else:
                         print(f"{Fore.RED+Style.BRIGHT}Please enter a positive number.{Style.RESET_ALL}")
@@ -233,19 +263,34 @@ class Exeos:
                 else:
                     print(f"{Fore.RED + Style.BRIGHT}Invalid input. Enter 'y' or 'n'.{Style.RESET_ALL}")
 
-        return option, count, choose, rotate
+        return option, choose, rotate
+    
+    async def check_connection(self, proxy=None):
+        url = "https://api.ipify.org?format=json"
+        proxies = {"http":proxy, "https":proxy} if proxy else None
+        try:
+            response = await asyncio.to_thread(requests.get, url=url, proxies=proxies, timeout=30, impersonate="chrome110", verify=False)
+            response.raise_for_status()
+            return True
+        except Exception as e:
+            self.log(
+                f"{Fore.CYAN + Style.BRIGHT}Status :{Style.RESET_ALL}"
+                f"{Fore.RED + Style.BRIGHT} Connection Not 200 OK {Style.RESET_ALL}"
+                f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
+                f"{Fore.YELLOW + Style.BRIGHT} {str(e)} {Style.RESET_ALL}"
+            )
+            return None
     
     async def email_login(self, email: str, password: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/auth/web/email/login"
-        data = json.dumps({"email":email, "password":password, "referralCode":self.ref_code})
-        headers = {
-            **self.headers,
-            "Content-Length": str(len(data)),
-            "Content-Type": "application/json"
-        }
+        data = json.dumps({"email":email, "password":password, "referralCode":self.REF_CODE})
+        headers = self.HEADERS[email].copy()
+        headers["Content-Length"] = str(len(data))
+        headers["Content-Type"] = "application/json"
         for attempt in range(retries):
+            proxies = {"http":proxy, "https":proxy} if proxy else None
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxies=proxies, timeout=60, impersonate="chrome110", verify=False)
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
@@ -258,18 +303,16 @@ class Exeos:
                     f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
                     f"{Fore.YELLOW+Style.BRIGHT} {str(e)} {Style.RESET_ALL}"
                 )
-
-        return None
+                return None
             
     async def user_data(self, email: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/account/web/me"
-        headers = {
-            **self.headers,
-            "Authorization": f"Bearer {self.access_tokens[email]}"
-        }
+        headers = self.HEADERS[email].copy()
+        headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
         for attempt in range(retries):
+            proxies = {"http":proxy, "https":proxy} if proxy else None
             try:
-                response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
+                response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxies=proxies, timeout=60, impersonate="chrome110", verify=False)
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
@@ -282,16 +325,31 @@ class Exeos:
                     f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
                     f"{Fore.YELLOW+Style.BRIGHT} {str(e)} {Style.RESET_ALL}"
                 )
-
-        return None
+                return None
             
-    async def process_user_login(self, email: str, password: str, use_proxy: bool, rotate_proxy: bool):
+    async def process_check_connection(self, email: str, use_proxy: bool, rotate_proxy: bool):
         while True:
             proxy = self.get_next_proxy_for_account(email) if use_proxy else None
             self.log(
-                f"{Fore.CYAN + Style.BRIGHT}Proxy  :{Style.RESET_ALL}"
-                f"{Fore.WHITE + Style.BRIGHT} {proxy} {Style.RESET_ALL}"
+                f"{Fore.CYAN+Style.BRIGHT}Proxy  :{Style.RESET_ALL}"
+                f"{Fore.WHITE+Style.BRIGHT} {proxy} {Style.RESET_ALL}"
             )
+
+            is_valid = await self.check_connection(proxy)
+            if is_valid:
+                return True
+            
+            if rotate_proxy:
+                proxy = self.rotate_proxy_for_account(email)
+                await asyncio.sleep(1)
+                continue
+
+            return False
+            
+    async def process_user_login(self, email: str, password: str, use_proxy: bool, rotate_proxy: bool):
+        is_valid = await self.process_check_connection(email, use_proxy, rotate_proxy)
+        if is_valid:
+            proxy = self.get_next_proxy_for_account(email) if use_proxy else None
 
             login = await self.email_login(email, password, proxy)
             if login and login.get("status") == "success":
@@ -303,10 +361,14 @@ class Exeos:
                 )
                 return True
             
-            if rotate_proxy:
-                proxy = self.rotate_proxy_for_account(email)
-                await asyncio.sleep(5)
-                continue
+            elif login and login.get("status") == "fail":
+                err_msg = login.get("error", "Unknown Error")
+                self.log(
+                    f"{Fore.CYAN + Style.BRIGHT}Status :{Style.RESET_ALL}"
+                    f"{Fore.RED + Style.BRIGHT} Login Failed {Style.RESET_ALL}"
+                    f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
+                    f"{Fore.YELLOW + Style.BRIGHT} {err_msg} {Style.RESET_ALL}"
+                )
 
             return False
             
@@ -337,24 +399,24 @@ class Exeos:
 
         return self.node_datas
                 
-    async def process_create_new_nodes(self, nodes_count: int):
-        for i in range(nodes_count):
+    async def process_create_new_nodes(self):
+        for i in range(self.nodes_count):
             node_id = self.generate_node_id()
             self.node_datas.append({"nodeId":node_id})
 
         self.log(
             f"{Fore.CYAN + Style.BRIGHT}Nodes  :{Style.RESET_ALL}"
-            f"{Fore.WHITE + Style.BRIGHT} {nodes_count} Node Ids {Style.RESET_ALL}"
+            f"{Fore.WHITE + Style.BRIGHT} {self.nodes_count} Node Ids {Style.RESET_ALL}"
             f"{Fore.GREEN + Style.BRIGHT}Have Been Created Successfully{Style.RESET_ALL}"
         )
         return self.node_datas
 
-    async def process_accounts(self, email, password, option, nodes_count, use_proxy, rotate_proxy):
+    async def process_accounts(self, email: str, password: str, option: int, use_proxy: bool, rotate_proxy: bool):
         logined = await self.process_user_login(email, password, use_proxy, rotate_proxy)
         if logined:
 
             if option == 1:
-                node_datas = await self.process_create_new_nodes(nodes_count)
+                node_datas = await self.process_create_new_nodes()
                 self.user_nodes.append({"Email":email, "Token":self.access_tokens[email], "Nodes":node_datas})
                 self.save_nodes(self.user_nodes)
 
@@ -363,8 +425,6 @@ class Exeos:
                 self.user_nodes.append({"Email":email, "Token":self.access_tokens[email], "Nodes":node_datas})
                 self.save_nodes(self.user_nodes)
 
-            self.log(f"{Fore.GREEN + Style.BRIGHT}Nodes Data Have Been Saved Successfully{Style.RESET_ALL}")
-
     async def main(self):
         try:
             accounts = self.load_accounts()
@@ -372,13 +432,12 @@ class Exeos:
                 self.log(f"{Fore.RED+Style.BRIGHT}No Accounts Loaded.{Style.RESET_ALL}")
                 return
 
-            option, nodes_count, proxy_choice, rotate_proxy = self.print_question()
+            option, proxy_choice, rotate_proxy = self.print_question()
 
             use_proxy = False
             if proxy_choice in [1, 2]:
                 use_proxy = True
 
-            
             self.clear_terminal()
             self.welcome()
             self.log(
@@ -409,15 +468,26 @@ class Exeos:
                         )
                         continue
 
+                    self.HEADERS[email] = {
+                        "Accept": "*/*",
+                        "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+                        "Origin": "https://app.exeos.network",
+                        "Referer": "https://app.exeos.network/",
+                        "Sec-Fetch-Dest": "empty",
+                        "Sec-Fetch-Mode": "cors",
+                        "Sec-Fetch-Site": "same-site",
+                        "User-Agent": random.choice(USER_AGENT)
+                    }
+
                     self.log(
                         f"{Fore.CYAN + Style.BRIGHT}Account:{Style.RESET_ALL}"
                         f"{Fore.WHITE + Style.BRIGHT} {self.mask_account(email)} {Style.RESET_ALL}"
                     )
 
-                    await self.process_accounts(email, password, option, nodes_count, use_proxy, rotate_proxy)
+                    await self.process_accounts(email, password, option, use_proxy, rotate_proxy)
                     await asyncio.sleep(3)
 
-            self.log(f"{Fore.CYAN + Style.BRIGHT}={Style.RESET_ALL}"*68)
+            self.log(f"{Fore.CYAN + Style.BRIGHT}={Style.RESET_ALL}"*60)
 
         except Exception as e:
             self.log(f"{Fore.RED+Style.BRIGHT}Error: {e}{Style.RESET_ALL}")

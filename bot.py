@@ -1,25 +1,49 @@
 from curl_cffi import requests
-from fake_useragent import FakeUserAgent
 from datetime import datetime
 from colorama import *
-import asyncio, json, os, pytz
+import asyncio, random, json, os, pytz
 
 wib = pytz.timezone('Asia/Jakarta')
 
+USER_AGENT = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.127 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.138 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.5563.65 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.5481.178 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.133 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.93 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:114.0) Gecko/20100101 Firefox/114.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:113.0) Gecko/20100101 Firefox/113.0",
+    "Mozilla/5.0 (Windows NT 10.0; rv:102.0) Gecko/20100101 Firefox/102.0",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:115.0) Gecko/20100101 Firefox/115.0",
+    "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:113.0) Gecko/20100101 Firefox/113.0",
+    "Mozilla/5.0 (X11; Arch Linux; Linux x86_64; rv:112.0) Gecko/20100101 Firefox/112.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.127 Safari/537.36 Edg/113.0.1774.35",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.121 Safari/537.36 Edg/112.0.1722.64",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.5563.64 Safari/537.36 Edg/111.0.1661.54",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.137 Safari/537.36 Edg/112.0.1722.68",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5.1 Safari/605.1.15",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Safari/605.1.15",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_7_2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36 OPR/99.0.4788.77",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.127 Safari/537.36 OPR/98.0.4759.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36 Brave/1.52.129",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_0_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.126 Safari/537.36 Brave/1.51.110",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.127 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.91 Safari/537.36 Vivaldi/6.1.3035.100",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5672.126 Safari/537.36 Vivaldi/6.0.2979.22",
+    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chromium/114.0.5735.91 Safari/537.36"
+]
+
 class Exeos:
     def __init__(self) -> None:
-        self.headers = {
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Origin": "chrome-extension://ijapofapbjjfegefdmhhgijgkillnogl",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-Storage-Access": "active",
-            "User-Agent": FakeUserAgent().random
-        }
         self.BASE_API = "https://api.exeos.network/extension"
-        self.ref_code = "REFZ26PQGAF" # U can change it with yours
+        self.HEADERS = {}
         self.proxies = []
         self.proxy_index = 0
         self.account_proxies = {}
@@ -70,7 +94,7 @@ class Exeos:
         filename = "proxy.txt"
         try:
             if use_proxy_choice == 1:
-                response = await asyncio.to_thread(requests.get, "https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text")
+                response = await asyncio.to_thread(requests.get, "https://raw.githubusercontent.com/monosans/proxy-list/refs/heads/main/proxies/all.txt")
                 response.raise_for_status()
                 content = response.text
                 with open(filename, 'w') as f:
@@ -176,84 +200,76 @@ class Exeos:
         return choose, rotate
         
     async def check_connection(self, email: str, node_id: str, proxy=None):
-        url = "https://api.ipify.org/?format=json"
-        headers = {
-            "Content-Type": "application/json"
-        }
+        url = "https://api.ipify.org?format=json"
+        proxies = {"http":proxy, "https":proxy} if proxy else None
+        await asyncio.sleep(3)
         try:
-            response = await asyncio.to_thread(requests.get, url=url, headers=headers, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
+            response = await asyncio.to_thread(requests.get, url=url, proxies=proxies, timeout=30, impersonate="chrome110", verify=False)
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            self.print_message(email, node_id, proxy, Fore.RED, f"Connection Not 200 OK: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
-                
-        return None
+            self.print_message(email, node_id, proxy, Fore.RED, f"Connection Not 200 OK: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")  
+            return None
     
     async def node_stats(self, email: str, node_id: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/stats"
         data = json.dumps({"extensionId":node_id})
-        headers = {
-            **self.headers,
-            "Authorization": f"Bearer {self.access_tokens[email]}",
-            "Content-Length": str(len(data)),
-            "Content-Type": "application/json"
-        }
+        headers = self.HEADERS[f'{email}_{node_id}'].copy()
+        headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
+        headers["Content-Length"] = str(len(data))
+        headers["Content-Type"] = "application/json"
         for attempt in range(retries):
+            proxies = {"http":proxy, "https":proxy} if proxy else None
+            await asyncio.sleep(5)
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxies=proxies, timeout=60, impersonate="chrome110", verify=False)
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
                 if attempt < retries - 1:
-                    await asyncio.sleep(5)
                     continue
                 self.print_message(email, node_id, proxy, Fore.RED, f"Update Stats Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
-                
-        return None
+                return None
     
     async def node_connect(self, email: str, node_id: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/connect"
         data = json.dumps({"extensionId":node_id, "ip":self.ip_address[node_id]})
-        headers = {
-            **self.headers,
-            "Authorization": f"Bearer {self.access_tokens[email]}",
-            "Content-Length": str(len(data)),
-            "Content-Type": "application/json"
-        }
+        headers = self.HEADERS[f'{email}_{node_id}'].copy()
+        headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
+        headers["Content-Length"] = str(len(data))
+        headers["Content-Type"] = "application/json"
         for attempt in range(retries):
+            proxies = {"http":proxy, "https":proxy} if proxy else None
+            await asyncio.sleep(5)
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxies=proxies, timeout=60, impersonate="chrome110", verify=False)
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
                 if attempt < retries - 1:
-                    await asyncio.sleep(5)
                     continue
                 self.print_message(email, node_id, proxy, Fore.RED, f"Node Not Connected: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
-                
-        return None
+                return None
     
     async def node_liveness(self, email: str, node_id: str, proxy=None, retries=5):
         url = f"{self.BASE_API}/liveness"
         data = json.dumps({"extensionId":node_id})
-        headers = {
-            **self.headers,
-            "Authorization": f"Bearer {self.access_tokens[email]}",
-            "Content-Length": str(len(data)),
-            "Content-Type": "application/json"
-        }
+        headers = self.HEADERS[f'{email}_{node_id}'].copy()
+        headers["Authorization"] = f"Bearer {self.access_tokens[email]}"
+        headers["Content-Length"] = str(len(data))
+        headers["Content-Type"] = "application/json"
         for attempt in range(retries):
+            proxies = {"http":proxy, "https":proxy} if proxy else None
+            await asyncio.sleep(5)
             try:
-                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxy=proxy, timeout=60, impersonate="chrome110", verify=False)
+                response = await asyncio.to_thread(requests.post, url=url, headers=headers, data=data, proxies=proxies, timeout=60, impersonate="chrome110", verify=False)
                 response.raise_for_status()
                 return response.json()
             except Exception as e:
                 if attempt < retries - 1:
-                    await asyncio.sleep(5)
                     continue
                 self.print_message(email, node_id, proxy, Fore.RED, f"Maintain Liveness Failed: {Fore.YELLOW + Style.BRIGHT}{str(e)}{Style.RESET_ALL}")
-
-        return None
+                return None
         
     async def process_check_connection(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
         while True:
@@ -266,29 +282,22 @@ class Exeos:
             
             if rotate_proxy:
                 proxy = self.rotate_proxy_for_account(node_id)
-
-            await asyncio.sleep(5)
-            continue
         
     async def process_node_stats(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
-        is_valid = await self.process_check_connection(email, node_id, use_proxy, rotate_proxy)
-        if is_valid:
-            while True:
+        while True:
+            is_valid = await self.process_check_connection(email, node_id, use_proxy, rotate_proxy)
+            if is_valid:
                 proxy = self.get_next_proxy_for_account(node_id) if use_proxy else None
 
                 update = await self.node_stats(email, node_id, proxy)
                 if update:
                     self.print_message(email, node_id, proxy, Fore.GREEN, "Stats Updated Successfully")
                     return True
-
-                await self.process_check_connection(email, node_id, use_proxy, rotate_proxy)
-                await asyncio.sleep(5)
-                continue
         
     async def process_node_connect(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
-        update = await self.process_node_stats(email, node_id, use_proxy, rotate_proxy)
-        if update:
-            while True:
+        while True:
+            update = await self.process_node_stats(email, node_id, use_proxy, rotate_proxy)
+            if update:
                 proxy = self.get_next_proxy_for_account(node_id) if use_proxy else None
 
                 connect = await self.node_connect(email, node_id, proxy)
@@ -301,17 +310,13 @@ class Exeos:
                         f"{Fore.WHITE + Style.BRIGHT}{uptime_total}{Style.RESET_ALL}"
                     )
                     return True
-
-                await self.process_node_stats(email, node_id, use_proxy, rotate_proxy)
-                await asyncio.sleep(5)
-                continue
         
     async def process_node_liveness(self, email: str, node_id: str, use_proxy: bool, rotate_proxy: bool):
         while True:
             print(
                 f"{Fore.CYAN + Style.BRIGHT}[ {datetime.now().astimezone(wib).strftime('%x %X %Z')} ]{Style.RESET_ALL}"
                 f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-                f"{Fore.BLUE + Style.BRIGHT}Wait For a Hours For Miantaining Liveness...{Style.RESET_ALL}",
+                f"{Fore.BLUE + Style.BRIGHT}Wait For a Hours For Maintaining Liveness...{Style.RESET_ALL}",
                 end="\r",
                 flush=True
             )
@@ -339,18 +344,32 @@ class Exeos:
             elif liveness and liveness.get("status") == "fail":
                 await self.process_node_connect(email, node_id, use_proxy, rotate_proxy)
                 continue
-
-            else:
-                await asyncio.sleep(5)
-                continue
         
     async def process_accounts(self, email: str, nodes: list, use_proxy: bool, rotate_proxy: bool):
-        async def process_node_session(node_id):
-            connected = await self.process_node_connect(email, node_id, use_proxy, rotate_proxy)
-            if connected:
-                asyncio.create_task(self.process_node_liveness(email, node_id, use_proxy, rotate_proxy))
+        tasks = []
 
-        await asyncio.gather(*[process_node_session(node["nodeId"]) for node in nodes])
+        async def process_node_session(node):
+            node_id = node.get("nodeId")
+
+            if node_id:
+                self.HEADERS[f'{email}_{node_id}'] = {
+                    "Accept": "application/json, text/plain, */*",
+                    "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+                    "Origin": "chrome-extension://ijapofapbjjfegefdmhhgijgkillnogl",
+                    "Sec-Fetch-Dest": "empty",
+                    "Sec-Fetch-Mode": "cors",
+                    "Sec-Fetch-Site": "none",
+                    "Sec-Fetch-Storage-Access": "active",
+                    "User-Agent": random.choice(USER_AGENT)
+                }
+
+                connected = await self.process_node_connect(email, node_id, use_proxy, rotate_proxy)
+                if connected:
+                    tasks.append(asyncio.create_task(self.process_node_liveness(email, node_id, use_proxy, rotate_proxy)))
+
+        await asyncio.gather(*[process_node_session(node) for node in nodes if node])
+
+        await asyncio.gather(*tasks)
 
     async def main(self):
         try:
